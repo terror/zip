@@ -1,309 +1,136 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { HelpButton } from './components/HelpModal';
+import { HelpButton } from './components/help-modal';
+import { generateBoard } from './lib/generator';
+import { GameState } from './lib/state';
+import {
+  arePositionsAdjacent,
+  findPositionInPath,
+  formatTime,
+} from './lib/utils';
 
 const GRID_SIZE = 5;
-
-type Cell = {
-  row: number;
-  col: number;
-  number?: number;
-  filled: boolean;
-};
-
-const generateBoard = (size: number) => {
-  const newGrid: Cell[][] = Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => ({
-      row,
-      col,
-      filled: false,
-    }))
-  );
-
-  const directions = [
-    { dr: 0, dc: 1 },
-    { dr: 1, dc: 0 },
-    { dr: 0, dc: -1 },
-    { dr: -1, dc: 0 },
-  ];
-
-  const isValid = (r: number, c: number) =>
-    r >= 0 && r < size && c >= 0 && c < size;
-
-  const generatePath = () => {
-    const visited = new Set<string>();
-
-    const path: Array<{ row: number; col: number }> = [];
-
-    let currentRow = Math.floor(Math.random() * size);
-    let currentCol = Math.floor(Math.random() * size);
-
-    path.push({ row: currentRow, col: currentCol });
-    visited.add(`${currentRow}-${currentCol}`);
-
-    while (path.length < size * size) {
-      const shuffledDirections = [...directions].sort(
-        () => Math.random() - 0.5
-      );
-
-      let found = false;
-
-      for (const { dr, dc } of shuffledDirections) {
-        const newRow = currentRow + dr;
-        const newCol = currentCol + dc;
-
-        const key = `${newRow}-${newCol}`;
-
-        if (isValid(newRow, newCol) && !visited.has(key)) {
-          currentRow = newRow;
-          currentCol = newCol;
-          path.push({ row: currentRow, col: currentCol });
-          visited.add(key);
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-        return generatePath();
-      }
-    }
-
-    return path;
-  };
-
-  const solutionPath = generatePath();
-
-  const numberedPositions = [
-    0,
-    Math.floor(solutionPath.length / 3),
-    Math.floor((2 * solutionPath.length) / 3),
-    solutionPath.length - 1,
-  ];
-
-  numberedPositions.forEach((index, numberValue) => {
-    const { row, col } = solutionPath[index];
-    newGrid[row][col].number = numberValue + 1;
-  });
-
-  return newGrid;
-};
 
 function App() {
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const [currentNumber, setCurrentNumber] = useState(1);
+  const [gameState, setGameState] = useState(
+    () => new GameState(generateBoard(GRID_SIZE))
+  );
+
   const [elapsedTime, setElapsedTime] = useState(0);
   const [finalTime, setFinalTime] = useState(0);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [grid, setGrid] = useState(() => generateBoard(GRID_SIZE));
-  const [isComplete, setIsComplete] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [path, setPath] = useState<Array<{ row: number; col: number }>>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (gameStarted && startTime) {
+    if (gameState.gameStarted && startTime) {
       interval = setInterval(() => {
         setElapsedTime(Date.now() - startTime);
       }, 100);
     }
 
     return () => clearInterval(interval);
-  }, [gameStarted, startTime]);
-
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    const centiseconds = Math.floor((ms % 1000) / 10);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
-  };
-
-  const checkCompletion = (newGrid: any[][], newCurrentNumber: number) => {
-    const allCellsFilled = newGrid.every((row) =>
-      row.every((cell) => cell.filled)
-    );
-
-    const maxNumber = Math.max(
-      ...newGrid
-        .flat()
-        .filter((cell) => cell.number)
-        .map((cell) => cell.number)
-    );
-
-    if (allCellsFilled && newCurrentNumber === maxNumber) {
-      setIsComplete(true);
-      setFinalTime(elapsedTime);
-      return true;
-    }
-
-    return false;
-  };
+  }, [gameState.gameStarted, startTime]);
 
   const handlePointerDown = (
     row: number,
     col: number,
     event?: React.PointerEvent
   ) => {
-    if (isComplete) return;
+    if (gameState.isComplete) return;
 
     event?.preventDefault();
 
-    const cell = grid[row][col];
+    const cell = gameState.grid[row][col];
 
-    const cellInPathIndex = path.findIndex(
-      (p) => p.row === row && p.col === col
-    );
+    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
 
     if (cellInPathIndex !== -1) {
-      const newPath = path.slice(0, cellInPathIndex + 1);
-
-      setPath(newPath);
-
-      setGrid((prev) => {
-        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
-
-        for (let r = 0; r < newGrid.length; r++) {
-          for (let c = 0; c < newGrid[r].length; c++) {
-            const cellInNewPath = newPath.some(
-              (p) => p.row === r && p.col === c
-            );
-
-            if (!cellInNewPath) {
-              newGrid[r][c].filled = false;
-            }
-          }
-        }
-
-        let newCurrentNumber = 1;
-
-        for (const pathCell of newPath) {
-          const pathCellData = newGrid[pathCell.row][pathCell.col];
-
-          if (pathCellData.number && pathCellData.number > newCurrentNumber) {
-            newCurrentNumber = pathCellData.number;
-          }
-        }
-
-        setCurrentNumber(newCurrentNumber);
-
-        return newGrid;
-      });
-
+      const newGameState = gameState.trimPathToPosition(row, col);
+      setGameState(newGameState);
       setIsDragging(true);
-
       return;
     }
 
-    if (cell.number === currentNumber) {
-      if (!gameStarted && cell.number === 1) {
-        setGameStarted(true);
+    if (cell.number === gameState.currentNumber) {
+      if (!gameState.gameStarted && cell.number === 1) {
         setStartTime(Date.now());
       }
 
       setIsDragging(true);
 
-      setPath([{ row, col }]);
+      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
 
-      setGrid((prev) => {
-        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
-        newGrid[row][col].filled = true;
-        return newGrid;
-      });
+      newGrid[row][col].filled = true;
+
+      setGameState(
+        new GameState(
+          newGrid,
+          [{ row, col }],
+          gameState.currentNumber,
+          gameState.isComplete,
+          !gameState.gameStarted && cell.number === 1
+            ? true
+            : gameState.gameStarted
+        )
+      );
     }
   };
 
   const handlePointerEnter = (row: number, col: number) => {
-    if (!isDragging || isComplete) return;
+    if (!isDragging || gameState.isComplete) return;
 
-    const lastCell = path[path.length - 1];
+    const lastCell = gameState.path[gameState.path.length - 1];
 
     if (!lastCell) return;
 
-    const isAdjacent =
-      Math.abs(row - lastCell.row) + Math.abs(col - lastCell.col) === 1;
+    const isAdjacent = arePositionsAdjacent(lastCell, { row, col });
 
     if (!isAdjacent) return;
 
-    const cellInPathIndex = path.findIndex(
-      (p) => p.row === row && p.col === col
-    );
+    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
 
     if (cellInPathIndex !== -1) {
-      const newPath = path.slice(0, cellInPathIndex + 1);
-
-      setPath(newPath);
-
-      setGrid((prev) => {
-        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
-
-        for (let r = 0; r < newGrid.length; r++) {
-          for (let c = 0; c < newGrid[r].length; c++) {
-            const cellInNewPath = newPath.some(
-              (p) => p.row === r && p.col === c
-            );
-
-            if (!cellInNewPath) {
-              newGrid[r][c].filled = false;
-            }
-          }
-        }
-
-        let newCurrentNumber = 1;
-
-        for (const pathCell of newPath) {
-          const pathCellData = newGrid[pathCell.row][pathCell.col];
-
-          if (pathCellData.number && pathCellData.number > newCurrentNumber) {
-            newCurrentNumber = pathCellData.number;
-          }
-        }
-
-        setCurrentNumber(newCurrentNumber);
-
-        return newGrid;
-      });
-
+      const newGameState = gameState.trimPathToPosition(row, col);
+      setGameState(newGameState);
       return;
     }
 
-    const cell = grid[row][col];
+    const cell = gameState.grid[row][col];
+    const nextExpectedNumber = gameState.currentNumber + 1;
+    const maxNumber = gameState.getMaxNumber();
 
-    const nextExpectedNumber = currentNumber + 1;
-
-    const maxNumber = Math.max(
-      ...grid
-        .flat()
-        .filter((cell) => cell.number !== undefined)
-        .map((cell) => cell.number!)
-    );
-
-    if (currentNumber === maxNumber) {
+    if (gameState.currentNumber === maxNumber) {
       return;
     }
 
-    if (!cell.number || cell.number === nextExpectedNumber) {
-      setPath((prev) => [...prev, { row, col }]);
+    if (gameState.canExtendPath({ row, col }, cell)) {
+      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
 
-      setGrid((prev) => {
-        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
+      newGrid[row][col].filled = true;
 
-        newGrid[row][col].filled = true;
+      let newCurrentNumber =
+        cell.number === nextExpectedNumber
+          ? nextExpectedNumber
+          : gameState.currentNumber;
 
-        let newCurrentNumber = currentNumber;
+      const newGameState = new GameState(
+        newGrid,
+        [...gameState.path, { row, col }],
+        newCurrentNumber,
+        gameState.isComplete,
+        gameState.gameStarted
+      );
 
-        if (cell.number === nextExpectedNumber) {
-          newCurrentNumber = nextExpectedNumber;
-          setCurrentNumber(nextExpectedNumber);
-        }
-
-        checkCompletion(newGrid, newCurrentNumber);
-
-        return newGrid;
-      });
+      if (newGameState.checkGameCompletion()) {
+        setGameState(newGameState.update({ isComplete: true }));
+        setFinalTime(elapsedTime);
+      } else {
+        setGameState(newGameState);
+      }
     }
   };
 
@@ -312,7 +139,7 @@ function App() {
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
-    if (!isDragging || isComplete) return;
+    if (!isDragging || gameState.isComplete) return;
 
     event.preventDefault();
 
@@ -331,27 +158,18 @@ function App() {
   };
 
   const resetPath = () => {
-    setPath([]);
-    setCurrentNumber(1);
-    setGameStarted(false);
+    const resetGameState = gameState.reset();
+    setGameState(resetGameState);
     setStartTime(null);
     setElapsedTime(0);
-    setIsComplete(false);
     setFinalTime(0);
-    setGrid((prev) =>
-      prev.map((row) => row.map((cell) => ({ ...cell, filled: false })))
-    );
   };
 
   const newGame = () => {
-    setPath([]);
-    setCurrentNumber(1);
-    setGameStarted(false);
+    setGameState(new GameState(generateBoard(GRID_SIZE)));
     setStartTime(null);
     setElapsedTime(0);
-    setIsComplete(false);
     setFinalTime(0);
-    setGrid(generateBoard(GRID_SIZE));
   };
 
   return (
@@ -361,7 +179,7 @@ function App() {
     >
       <h1 className='text-2xl font-bold sm:text-3xl'>Zip</h1>
 
-      {isComplete && (
+      {gameState.isComplete && (
         <div className='text-center'>
           <div className='mb-2 text-2xl font-bold text-green-600'>
             🎉 Puzzle Solved! 🎉
@@ -372,7 +190,7 @@ function App() {
         </div>
       )}
 
-      {!isComplete && (
+      {!gameState.isComplete && (
         <div className='flex items-center gap-8'>
           <div className='rounded bg-gray-100 px-3 py-1 font-mono text-base sm:text-lg'>
             {formatTime(elapsedTime)}
@@ -391,7 +209,7 @@ function App() {
         onPointerLeave={handlePointerUp}
         onPointerMove={handlePointerMove}
       >
-        {grid.flat().map((cell, index) => {
+        {gameState.grid.flat().map((cell, index) => {
           const row = Math.floor(index / GRID_SIZE);
           const col = index % GRID_SIZE;
 
