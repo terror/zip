@@ -51,23 +51,6 @@ export const formatTime = (ms: number): string => {
 };
 
 /**
- * Finds the maximum number value present in a grid.
- *
- * @param grid - The grid to search through
- * @returns The maximum number found, or -Infinity if no numbers exist
- */
-export const getMaxNumberFromGrid = (
-  grid: Array<Array<{ number?: number }>>
-): number => {
-  const numbers = grid
-    .flat()
-    .map((cell) => cell.number)
-    .filter((num): num is number => num !== undefined);
-
-  return numbers.length > 0 ? Math.max(...numbers) : -Infinity;
-};
-
-/**
  * Validates if a position is within the bounds of a square grid.
  *
  * @param row - The row coordinate to validate

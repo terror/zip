@@ -4,7 +4,6 @@ import {
   arePositionsAdjacent,
   findPositionInPath,
   formatTime,
-  getMaxNumberFromGrid,
   isValidGridPosition,
 } from './utils';
 
@@ -64,27 +63,6 @@ describe('formatTime', () => {
     expect(formatTime(60000)).toBe('1:00.00');
     expect(formatTime(61234)).toBe('1:01.23');
     expect(formatTime(3665450)).toBe('61:05.45');
-  });
-});
-
-describe('getMaxNumberFromGrid', () => {
-  it('finds the maximum number in grid', () => {
-    const grid = [
-      [{ number: 1 }, { number: undefined }, { number: 3 }],
-      [{ number: undefined }, { number: 2 }, { number: undefined }],
-      [{ number: 4 }, { number: undefined }, { number: undefined }],
-    ];
-
-    expect(getMaxNumberFromGrid(grid)).toBe(4);
-  });
-
-  it('handles grid with no numbers', () => {
-    const grid = [
-      [{ number: undefined }, { number: undefined }],
-      [{ number: undefined }, { number: undefined }],
-    ];
-
-    expect(getMaxNumberFromGrid(grid)).toBe(-Infinity);
   });
 });
 
