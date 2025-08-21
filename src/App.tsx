@@ -107,6 +107,7 @@ function App() {
         setElapsedTime(Date.now() - startTime);
       }, 100);
     }
+
     return () => clearInterval(interval);
   }, [gameStarted, startTime]);
 
@@ -129,6 +130,7 @@ function App() {
         .filter((cell) => cell.number)
         .map((cell) => cell.number)
     );
+
     if (allCellsFilled && newCurrentNumber === maxNumber) {
       setIsComplete(true);
       setFinalTime(elapsedTime);
@@ -138,7 +140,7 @@ function App() {
     return false;
   };
 
-  const handleMouseDown = (row: number, col: number) => {
+  const handlePointerDown = (row: number, col: number) => {
     if (isComplete) return;
 
     const cell = grid[row][col];
@@ -149,6 +151,7 @@ function App() {
 
     if (cellInPathIndex !== -1) {
       const newPath = path.slice(0, cellInPathIndex + 1);
+
       setPath(newPath);
 
       setGrid((prev) => {
@@ -175,6 +178,7 @@ function App() {
             newCurrentNumber = pathCellData.number;
           }
         }
+
         setCurrentNumber(newCurrentNumber);
 
         return newGrid;
@@ -203,7 +207,7 @@ function App() {
     }
   };
 
-  const handleMouseEnter = (row: number, col: number) => {
+  const handlePointerEnter = (row: number, col: number) => {
     if (!isDragging || isComplete) return;
 
     const lastCell = path[path.length - 1];
@@ -274,6 +278,7 @@ function App() {
 
     if (!cell.number || cell.number === nextExpectedNumber) {
       setPath((prev) => [...prev, { row, col }]);
+
       setGrid((prev) => {
         const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
 
@@ -293,8 +298,25 @@ function App() {
     }
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setIsDragging(false);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || isComplete) return;
+
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+
+    if (!element) return;
+
+    const cellElement = element.closest('[data-cell]') as HTMLElement;
+
+    if (!cellElement) return;
+
+    const row = parseInt(cellElement.dataset.row || '0');
+    const col = parseInt(cellElement.dataset.col || '0');
+
+    handlePointerEnter(row, col);
   };
 
   const resetPath = () => {
@@ -322,8 +344,8 @@ function App() {
   };
 
   return (
-    <div className='flex min-h-svh flex-col items-center justify-center gap-4'>
-      <h1 className='text-3xl font-bold'>Zip</h1>
+    <div className='flex min-h-svh flex-col items-center justify-center gap-4 p-4'>
+      <h1 className='text-2xl sm:text-3xl font-bold'>Zip</h1>
 
       {isComplete && (
         <div className='text-center'>
@@ -338,7 +360,7 @@ function App() {
 
       {!isComplete && (
         <div className='flex items-center gap-8'>
-          <div className='rounded bg-gray-100 px-3 py-1 font-mono text-lg'>
+          <div className='rounded bg-gray-100 px-3 py-1 font-mono text-base sm:text-lg'>
             {formatTime(elapsedTime)}
           </div>
         </div>
@@ -348,8 +370,9 @@ function App() {
         ref={gridRef}
         className={`grid gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
         style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onPointerMove={handlePointerMove}
       >
         {grid.flat().map((cell, index) => {
           const row = Math.floor(index / GRID_SIZE);
@@ -358,15 +381,18 @@ function App() {
           return (
             <div
               key={index}
-              className={`flex h-12 w-12 cursor-pointer items-center justify-center border border-gray-400 text-lg font-bold transition-colors ${
+              data-cell
+              data-row={row}
+              data-col={col}
+              className={`flex h-14 w-14 sm:h-12 sm:w-12 cursor-pointer items-center justify-center border border-gray-400 text-lg font-bold transition-colors touch-manipulation ${
                 cell.filled
                   ? 'border-blue-500 bg-blue-200'
                   : cell.number
                     ? 'bg-yellow-100 hover:bg-yellow-200'
                     : 'bg-white hover:bg-gray-100'
               }`}
-              onMouseDown={() => handleMouseDown(row, col)}
-              onMouseEnter={() => handleMouseEnter(row, col)}
+              onPointerDown={() => handlePointerDown(row, col)}
+              onPointerEnter={() => handlePointerEnter(row, col)}
             >
               {cell.number}
             </div>
@@ -375,10 +401,10 @@ function App() {
       </div>
 
       <div className='flex items-center gap-4'>
-        <button onClick={newGame} className='rounded px-4 py-2 text-sm'>
+        <button onClick={newGame} className='rounded px-4 py-3 text-base sm:text-sm touch-manipulation'>
           New Game
         </button>
-        <button onClick={resetPath} className='rounded px-4 py-2 text-sm'>
+        <button onClick={resetPath} className='rounded px-4 py-3 text-base sm:text-sm touch-manipulation'>
           Reset
         </button>
       </div>
