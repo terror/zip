@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const GRID_SIZE = 4;
+const GRID_SIZE = 5;
 
 type Cell = {
   row: number;
@@ -42,11 +42,13 @@ const generateBoard = (size: number) => {
       const shuffledDirections = [...directions].sort(
         () => Math.random() - 0.5
       );
+
       let found = false;
 
       for (const { dr, dc } of shuffledDirections) {
         const newRow = currentRow + dr;
         const newCol = currentCol + dc;
+
         const key = `${newRow}-${newCol}`;
 
         if (isValid(newRow, newCol) && !visited.has(key)) {
@@ -121,7 +123,8 @@ function App() {
       row.every((cell) => cell.filled)
     );
 
-    if (allCellsFilled && newCurrentNumber === 4) {
+    const maxNumber = Math.max(...newGrid.flat().filter(cell => cell.number).map(cell => cell.number));
+    if (allCellsFilled && newCurrentNumber === maxNumber) {
       setIsComplete(true);
       setFinalTime(elapsedTime);
       return true;
@@ -247,7 +250,8 @@ function App() {
 
       <div
         ref={gridRef}
-        className={`grid grid-cols-4 gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
+        className={`grid gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
+        style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
