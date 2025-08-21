@@ -261,6 +261,17 @@ function App() {
 
     const nextExpectedNumber = currentNumber + 1;
 
+    const maxNumber = Math.max(
+      ...grid
+        .flat()
+        .filter((cell) => cell.number !== undefined)
+        .map((cell) => cell.number!)
+    );
+
+    if (currentNumber === maxNumber) {
+      return;
+    }
+
     if (!cell.number || cell.number === nextExpectedNumber) {
       setPath((prev) => [...prev, { row, col }]);
       setGrid((prev) => {
