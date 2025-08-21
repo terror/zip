@@ -143,6 +143,48 @@ function App() {
 
     const cell = grid[row][col];
 
+    const cellInPathIndex = path.findIndex(
+      (p) => p.row === row && p.col === col
+    );
+
+    if (cellInPathIndex !== -1) {
+      const newPath = path.slice(0, cellInPathIndex + 1);
+      setPath(newPath);
+
+      setGrid((prev) => {
+        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
+
+        for (let r = 0; r < newGrid.length; r++) {
+          for (let c = 0; c < newGrid[r].length; c++) {
+            const cellInNewPath = newPath.some(
+              (p) => p.row === r && p.col === c
+            );
+
+            if (!cellInNewPath) {
+              newGrid[r][c].filled = false;
+            }
+          }
+        }
+
+        let newCurrentNumber = 1;
+
+        for (const pathCell of newPath) {
+          const pathCellData = newGrid[pathCell.row][pathCell.col];
+
+          if (pathCellData.number && pathCellData.number > newCurrentNumber) {
+            newCurrentNumber = pathCellData.number;
+          }
+        }
+        setCurrentNumber(newCurrentNumber);
+
+        return newGrid;
+      });
+
+      setIsDragging(true);
+
+      return;
+    }
+
     if (cell.number === currentNumber) {
       if (!gameStarted && cell.number === 1) {
         setGameStarted(true);
