@@ -8,32 +8,55 @@ import {
 } from './utils';
 
 describe('arePositionsAdjacent', () => {
-  it('returns true for adjacent positions', () => {
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 1, col: 2 })).toBe(
-      true
-    );
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 2, col: 1 })).toBe(
-      true
-    );
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 1, col: 0 })).toBe(
-      true
-    );
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 0, col: 1 })).toBe(
-      true
-    );
-  });
-
-  it('returns false for non-adjacent positions', () => {
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 1, col: 1 })).toBe(
-      false
-    );
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 3, col: 1 })).toBe(
-      false
-    );
-    expect(arePositionsAdjacent({ row: 1, col: 1 }, { row: 2, col: 2 })).toBe(
-      false
-    );
-  });
+  it.each([
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 1, col: 2 },
+      expected: true,
+      description: 'right adjacent',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 2, col: 1 },
+      expected: true,
+      description: 'down adjacent',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 1, col: 0 },
+      expected: true,
+      description: 'left adjacent',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 0, col: 1 },
+      expected: true,
+      description: 'up adjacent',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 1, col: 1 },
+      expected: false,
+      description: 'same position',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 3, col: 1 },
+      expected: false,
+      description: 'two rows apart',
+    },
+    {
+      pos1: { row: 1, col: 1 },
+      pos2: { row: 2, col: 2 },
+      expected: false,
+      description: 'diagonal',
+    },
+  ])(
+    'returns $expected when positions are $description',
+    ({ pos1, pos2, expected }) => {
+      expect(arePositionsAdjacent(pos1, pos2)).toBe(expected);
+    }
+  );
 });
 
 describe('findPositionInPath', () => {
