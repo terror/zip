@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+
 import { HelpButton } from './components/HelpModal';
 
 const GRID_SIZE = 5;
@@ -31,6 +32,7 @@ const generateBoard = (size: number) => {
 
   const generatePath = () => {
     const visited = new Set<string>();
+
     const path: Array<{ row: number; col: number }> = [];
 
     let currentRow = Math.floor(Math.random() * size);
@@ -141,8 +143,14 @@ function App() {
     return false;
   };
 
-  const handlePointerDown = (row: number, col: number) => {
+  const handlePointerDown = (
+    row: number,
+    col: number,
+    event?: React.PointerEvent
+  ) => {
     if (isComplete) return;
+
+    event?.preventDefault();
 
     const cell = grid[row][col];
 
@@ -303,10 +311,12 @@ function App() {
     setIsDragging(false);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = (event: React.PointerEvent) => {
     if (!isDragging || isComplete) return;
 
-    const element = document.elementFromPoint(e.clientX, e.clientY);
+    event.preventDefault();
+
+    const element = document.elementFromPoint(event.clientX, event.clientY);
 
     if (!element) return;
 
@@ -345,8 +355,11 @@ function App() {
   };
 
   return (
-    <div className='flex min-h-svh flex-col items-center justify-center gap-4 p-4'>
-      <h1 className='text-2xl sm:text-3xl font-bold'>Zip</h1>
+    <div
+      className='flex min-h-svh flex-col items-center justify-center gap-4 p-4'
+      style={{ overscrollBehavior: 'none' }}
+    >
+      <h1 className='text-2xl font-bold sm:text-3xl'>Zip</h1>
 
       {isComplete && (
         <div className='text-center'>
@@ -370,7 +383,10 @@ function App() {
       <div
         ref={gridRef}
         className={`grid gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
-        style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+          touchAction: 'none',
+        }}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerMove={handlePointerMove}
@@ -385,14 +401,15 @@ function App() {
               data-cell
               data-row={row}
               data-col={col}
-              className={`flex h-14 w-14 sm:h-12 sm:w-12 cursor-pointer items-center justify-center border border-gray-400 text-lg font-bold transition-colors touch-manipulation ${
+              className={`flex h-14 w-14 cursor-pointer touch-manipulation items-center justify-center border border-gray-400 text-lg font-bold transition-colors sm:h-12 sm:w-12 ${
                 cell.filled
                   ? 'border-blue-500 bg-blue-200'
                   : cell.number
                     ? 'bg-yellow-100 hover:bg-yellow-200'
                     : 'bg-white hover:bg-gray-100'
               }`}
-              onPointerDown={() => handlePointerDown(row, col)}
+              style={{ touchAction: 'none' }}
+              onPointerDown={(e) => handlePointerDown(row, col, e)}
               onPointerEnter={() => handlePointerEnter(row, col)}
             >
               {cell.number}
@@ -402,10 +419,16 @@ function App() {
       </div>
 
       <div className='flex items-center gap-4'>
-        <button onClick={newGame} className='rounded px-4 py-3 text-base sm:text-sm touch-manipulation'>
+        <button
+          onClick={newGame}
+          className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
+        >
           New Game
         </button>
-        <button onClick={resetPath} className='rounded px-4 py-3 text-base sm:text-sm touch-manipulation'>
+        <button
+          onClick={resetPath}
+          className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
+        >
           Reset
         </button>
         <HelpButton />
