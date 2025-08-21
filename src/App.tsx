@@ -2,6 +2,7 @@ import { HelpButton } from '@/components/help-modal';
 import { Button } from '@/components/ui/button';
 import { generateBoard } from '@/lib/generator';
 import { GameState } from '@/lib/state';
+import { Gamepad2, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import {
@@ -237,12 +238,13 @@ function App() {
         })}
       </div>
 
-      <div className='flex items-center gap-4'>
+      <div className='flex items-center gap-2'>
         <Button
           onClick={newGame}
           variant={'ghost'}
           className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
         >
+          <Gamepad2 />
           New Game
         </Button>
         <Button
@@ -250,6 +252,7 @@ function App() {
           variant={'ghost'}
           className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
         >
+          <RotateCcw />
           Reset
         </Button>
         <HelpButton />

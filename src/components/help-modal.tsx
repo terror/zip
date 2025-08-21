@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from './ui/button';
@@ -16,10 +17,11 @@ export function HelpButton() {
   return (
     <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
       <Button
-        variant='outline'
+        variant='ghost'
         onClick={() => setIsHelpOpen(true)}
         className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
       >
+        <Info />
         Help
       </Button>
 
