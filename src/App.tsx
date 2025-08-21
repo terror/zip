@@ -247,7 +247,7 @@ function App() {
 
       <div
         ref={gridRef}
-        className='grid grid-cols-4 gap-1 border-2 border-gray-800 p-2'
+        className={`grid grid-cols-4 gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
