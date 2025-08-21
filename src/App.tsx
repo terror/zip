@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { HelpButton } from './components/HelpModal';
 
 const GRID_SIZE = 5;
 
@@ -407,6 +408,7 @@ function App() {
         <button onClick={resetPath} className='rounded px-4 py-3 text-base sm:text-sm touch-manipulation'>
           Reset
         </button>
+        <HelpButton />
       </div>
     </div>
   );
