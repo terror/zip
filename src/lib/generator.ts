@@ -21,6 +21,7 @@ export const DIRECTIONS: Direction[] = [
 
 /**
  * Adds sequential numbers to specific positions along a solution path in the grid.
+ *
  * Numbers are placed at the start, 1/3, 2/3, and end positions of the path.
  *
  * @param grid - The grid to add numbers to
@@ -50,6 +51,7 @@ export const addNumbersToGrid = (
 
 /**
  * Creates an empty grid of the specified size with unfilled cells.
+ *
  * Each cell contains its row and column coordinates.
  *
  * @param size - The dimensions of the square grid (size x size)
@@ -67,19 +69,18 @@ export const createEmptyGrid = (size: number): Cell[][] => {
 
 /**
  * Generates a complete game board with a random solution path and numbered positions.
+ *
  * Combines grid creation, path generation, and number placement.
  *
  * @param size - The dimensions of the square grid (size x size)
  * @returns A complete game board ready for play
  */
-export const generateBoard = (size: number): Cell[][] => {
-  const grid = createEmptyGrid(size);
-  const solutionPath = generateRandomPath(size);
-  return addNumbersToGrid(grid, solutionPath);
-};
+export const generateBoard = (size: number): Cell[][] =>
+  addNumbersToGrid(createEmptyGrid(size), generateRandomPath(size));
 
 /**
  * Generates a random continuous path that visits every cell in the grid exactly once.
+ *
  * Uses a backtracking approach with random direction selection.
  *
  * @param size - The dimensions of the square grid (size x size)
@@ -105,6 +106,7 @@ export const generateRandomPath = (
     for (const { dr, dc } of shuffledDirections) {
       const newRow = currentRow + dr;
       const newCol = currentCol + dc;
+
       const key = `${newRow}-${newCol}`;
 
       if (isValidGridPosition(newRow, newCol, size) && !visited.has(key)) {
@@ -127,6 +129,7 @@ export const generateRandomPath = (
 
 /**
  * Shuffles an array using the Fisher-Yates algorithm approximation.
+ *
  * Returns a new array without modifying the original.
  *
  * @param array - The array to shuffle

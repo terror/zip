@@ -10,31 +10,24 @@ import {
 describe('addNumbersToGrid', () => {
   it('adds numbers at correct positions', () => {
     const grid = createEmptyGrid(3);
+
     const path = [
-      { row: 0, col: 0 }, // index 0
-      { row: 0, col: 1 }, // index 1
-      { row: 0, col: 2 }, // index 2
-      { row: 1, col: 2 }, // index 3 - this should be 1/3 (Math.floor(9/3) = 3)
-      { row: 2, col: 2 }, // index 4
-      { row: 2, col: 1 }, // index 5
-      { row: 2, col: 0 }, // index 6 - this should be 2/3 (Math.floor(2*9/3) = 6)
-      { row: 1, col: 0 }, // index 7
-      { row: 1, col: 1 }, // index 8 - this should be last (8)
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+      { row: 0, col: 2 },
+      { row: 1, col: 2 },
+      { row: 2, col: 2 },
+      { row: 2, col: 1 },
+      { row: 2, col: 0 },
+      { row: 1, col: 0 },
+      { row: 1, col: 1 },
     ];
 
     const numberedGrid = addNumbersToGrid(grid, path);
 
-    // Check that numbers are placed at the expected positions
-    // index 0: first position
     expect(numberedGrid[0][0].number).toBe(1);
-
-    // index 3: 1/3 position (Math.floor(9/3) = 3)
     expect(numberedGrid[1][2].number).toBe(2);
-
-    // index 6: 2/3 position (Math.floor(2*9/3) = 6)
     expect(numberedGrid[2][0].number).toBe(3);
-
-    // index 8: last position
     expect(numberedGrid[1][1].number).toBe(4);
   });
 
@@ -59,6 +52,7 @@ describe('addNumbersToGrid', () => {
 describe('createEmptyGrid', () => {
   it('creates a grid of the correct size', () => {
     const grid = createEmptyGrid(3);
+
     expect(grid).toHaveLength(3);
     expect(grid[0]).toHaveLength(3);
     expect(grid[2]).toHaveLength(3);
@@ -90,6 +84,7 @@ describe('generateRandomPath', () => {
 
   it('generates path with valid positions', () => {
     const size = 3;
+
     const path = generateRandomPath(size);
 
     for (const pos of path) {
