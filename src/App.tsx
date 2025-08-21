@@ -123,7 +123,12 @@ function App() {
       row.every((cell) => cell.filled)
     );
 
-    const maxNumber = Math.max(...newGrid.flat().filter(cell => cell.number).map(cell => cell.number));
+    const maxNumber = Math.max(
+      ...newGrid
+        .flat()
+        .filter((cell) => cell.number)
+        .map((cell) => cell.number)
+    );
     if (allCellsFilled && newCurrentNumber === maxNumber) {
       setIsComplete(true);
       setFinalTime(elapsedTime);
@@ -168,9 +173,47 @@ function App() {
 
     if (!isAdjacent) return;
 
-    const alreadyInPath = path.some((p) => p.row === row && p.col === col);
+    const cellInPathIndex = path.findIndex(
+      (p) => p.row === row && p.col === col
+    );
 
-    if (alreadyInPath) return;
+    if (cellInPathIndex !== -1) {
+      const newPath = path.slice(0, cellInPathIndex + 1);
+
+      setPath(newPath);
+
+      setGrid((prev) => {
+        const newGrid = prev.map((r) => r.map((c) => ({ ...c })));
+
+        for (let r = 0; r < newGrid.length; r++) {
+          for (let c = 0; c < newGrid[r].length; c++) {
+            const cellInNewPath = newPath.some(
+              (p) => p.row === r && p.col === c
+            );
+
+            if (!cellInNewPath) {
+              newGrid[r][c].filled = false;
+            }
+          }
+        }
+
+        let newCurrentNumber = 1;
+
+        for (const pathCell of newPath) {
+          const pathCellData = newGrid[pathCell.row][pathCell.col];
+
+          if (pathCellData.number && pathCellData.number > newCurrentNumber) {
+            newCurrentNumber = pathCellData.number;
+          }
+        }
+
+        setCurrentNumber(newCurrentNumber);
+
+        return newGrid;
+      });
+
+      return;
+    }
 
     const cell = grid[row][col];
 
