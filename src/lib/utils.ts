@@ -11,9 +11,8 @@ import { twMerge } from 'tailwind-merge';
 export const arePositionsAdjacent = (
   pos1: { row: number; col: number },
   pos2: { row: number; col: number }
-): boolean => {
-  return Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col) === 1;
-};
+): boolean =>
+  Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col) === 1;
 
 /**
  * Combines class names using clsx and tailwind-merge for optimal CSS class handling.
@@ -21,9 +20,7 @@ export const arePositionsAdjacent = (
  * @param inputs - Class values to combine
  * @returns Merged and deduplicated class string
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
 
 /**
  * Finds the index of a specific position within a path array.
@@ -37,9 +34,7 @@ export const findPositionInPath = (
   path: Array<{ row: number; col: number }>,
   targetRow: number,
   targetCol: number
-): number => {
-  return path.findIndex((p) => p.row === targetRow && p.col === targetCol);
-};
+): number => path.findIndex((p) => p.row === targetRow && p.col === targetCol);
 
 /**
  * Formats milliseconds into a human-readable time string (MM:SS.CC format).
@@ -84,6 +79,4 @@ export const isValidGridPosition = (
   row: number,
   col: number,
   size: number
-): boolean => {
-  return row >= 0 && row < size && col >= 0 && col < size;
-};
+): boolean => row >= 0 && row < size && col >= 0 && col < size;
