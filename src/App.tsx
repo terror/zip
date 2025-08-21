@@ -1,8 +1,9 @@
+import { HelpButton } from '@/components/help-modal';
+import { Button } from '@/components/ui/button';
+import { generateBoard } from '@/lib/generator';
+import { GameState } from '@/lib/state';
 import { useEffect, useRef, useState } from 'react';
 
-import { HelpButton } from './components/help-modal';
-import { generateBoard } from './lib/generator';
-import { GameState } from './lib/state';
 import {
   arePositionsAdjacent,
   findPositionInPath,
@@ -237,18 +238,20 @@ function App() {
       </div>
 
       <div className='flex items-center gap-4'>
-        <button
+        <Button
           onClick={newGame}
+          variant={'ghost'}
           className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
         >
           New Game
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={resetPath}
+          variant={'ghost'}
           className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
         >
           Reset
-        </button>
+        </Button>
         <HelpButton />
       </div>
     </div>
