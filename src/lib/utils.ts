@@ -63,3 +63,51 @@ export const isValidGridPosition = (
   col: number,
   size: number
 ): boolean => row >= 0 && row < size && col >= 0 && col < size;
+
+/**
+ * Generates a unique 8-character room hash for URLs.
+ *
+ * @returns A random 8-character alphanumeric string
+ */
+export function generateRoomHash(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+  let result = '';
+
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return result;
+}
+
+/**
+ * Generates a random nickname for users.
+ *
+ * @returns A random nickname in the format AdjectiveNounNumber
+ */
+export function generateNickname(): string {
+  const adjectives = [
+    'Quick',
+    'Brave',
+    'Smart',
+    'Cool',
+    'Swift',
+    'Bold',
+    'Wise',
+    'Sharp',
+  ];
+
+  const nouns = [
+    'Fox',
+    'Wolf',
+    'Eagle',
+    'Tiger',
+    'Bear',
+    'Lion',
+    'Hawk',
+    'Shark',
+  ];
+
+  return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${Math.floor(Math.random() * 1000)}`;
+}

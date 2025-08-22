@@ -1,262 +1,83 @@
-import { HelpButton } from '@/components/help-modal';
-import { Button } from '@/components/ui/button';
-import { generateBoard } from '@/lib/generator';
-import { GameState } from '@/lib/state';
-import { Gamepad2, RotateCcw } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
+import { Game } from '@/components/game';
+import { Room } from '@/components/room';
 import {
-  arePositionsAdjacent,
-  findPositionInPath,
-  formatTime,
-} from './lib/utils';
-
-const GRID_SIZE = 5;
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import { useEffect, useState } from 'react';
 
 function App() {
-  const gridRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const [gameState, setGameState] = useState(
-    () => new GameState(generateBoard(GRID_SIZE))
-  );
+  const [panelSizes, setPanelSizes] = useState(() => {
+    const saved = localStorage.getItem('panel-sizes');
+    return saved ? JSON.parse(saved) : [60, 40];
+  });
 
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [finalTime, setFinalTime] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [mobilePanelSizes, setMobilePanelSizes] = useState(() => {
+    const saved = localStorage.getItem('mobile-panel-sizes');
+    return saved ? JSON.parse(saved) : [70, 30];
+  });
+
+  const [isRoomCollapsed, setIsRoomCollapsed] = useState(() => {
+    const saved = localStorage.getItem('room-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    if (gameState.gameStarted && startTime) {
-      interval = setInterval(() => {
-        setElapsedTime(Date.now() - startTime);
-      }, 100);
-    }
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [gameState.gameStarted, startTime]);
+  const handlePanelResize = (sizes: number[]) => {
+    if (isRoomCollapsed) persistRoomCollapsed(false);
 
-  const handlePointerDown = (
-    row: number,
-    col: number,
-    event?: React.PointerEvent
-  ) => {
-    if (gameState.isComplete) return;
-
-    event?.preventDefault();
-
-    const cell = gameState.grid[row][col];
-
-    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
-
-    if (cellInPathIndex !== -1) {
-      const newGameState = gameState.trimPathToPosition(row, col);
-      setGameState(newGameState);
-      setIsDragging(true);
-      return;
-    }
-
-    if (cell.number === gameState.currentNumber) {
-      if (!gameState.gameStarted && cell.number === 1) {
-        setStartTime(Date.now());
-      }
-
-      setIsDragging(true);
-
-      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
-
-      newGrid[row][col].filled = true;
-
-      setGameState(
-        new GameState(
-          newGrid,
-          [{ row, col }],
-          gameState.currentNumber,
-          gameState.isComplete,
-          !gameState.gameStarted && cell.number === 1
-            ? true
-            : gameState.gameStarted
-        )
-      );
+    if (isMobile) {
+      setMobilePanelSizes(sizes);
+      localStorage.setItem('mobile-panel-sizes', JSON.stringify(sizes));
+    } else {
+      setPanelSizes(sizes);
+      localStorage.setItem('panel-sizes', JSON.stringify(sizes));
     }
   };
 
-  const handlePointerEnter = (row: number, col: number) => {
-    if (!isDragging || gameState.isComplete) return;
-
-    const lastCell = gameState.path[gameState.path.length - 1];
-
-    if (!lastCell) return;
-
-    const isAdjacent = arePositionsAdjacent(lastCell, { row, col });
-
-    if (!isAdjacent) return;
-
-    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
-
-    if (cellInPathIndex !== -1) {
-      const newGameState = gameState.trimPathToPosition(row, col);
-      setGameState(newGameState);
-      return;
-    }
-
-    const cell = gameState.grid[row][col];
-    const nextExpectedNumber = gameState.currentNumber + 1;
-    const maxNumber = gameState.getMaxNumber();
-
-    if (gameState.currentNumber === maxNumber) {
-      return;
-    }
-
-    if (gameState.canExtendPath({ row, col }, cell)) {
-      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
-
-      newGrid[row][col].filled = true;
-
-      let newCurrentNumber =
-        cell.number === nextExpectedNumber
-          ? nextExpectedNumber
-          : gameState.currentNumber;
-
-      const newGameState = new GameState(
-        newGrid,
-        [...gameState.path, { row, col }],
-        newCurrentNumber,
-        gameState.isComplete,
-        gameState.gameStarted
-      );
-
-      if (newGameState.checkGameCompletion()) {
-        setGameState(newGameState.update({ isComplete: true }));
-        setFinalTime(elapsedTime);
-      } else {
-        setGameState(newGameState);
-      }
-    }
+  const persistRoomCollapsed = (value: boolean) => {
+    setIsRoomCollapsed(value);
+    localStorage.setItem('room-collapsed', JSON.stringify(value));
   };
 
-  const handlePointerUp = () => {
-    setIsDragging(false);
-  };
-
-  const handlePointerMove = (event: React.PointerEvent) => {
-    if (!isDragging || gameState.isComplete) return;
-
-    event.preventDefault();
-
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-
-    if (!element) return;
-
-    const cellElement = element.closest('[data-cell]') as HTMLElement;
-
-    if (!cellElement) return;
-
-    const row = parseInt(cellElement.dataset.row || '0');
-    const col = parseInt(cellElement.dataset.col || '0');
-
-    handlePointerEnter(row, col);
-  };
-
-  const resetPath = () => {
-    const resetGameState = gameState.reset();
-    setGameState(resetGameState);
-    setStartTime(null);
-    setElapsedTime(0);
-    setFinalTime(0);
-  };
-
-  const newGame = () => {
-    setGameState(new GameState(generateBoard(GRID_SIZE)));
-    setStartTime(null);
-    setElapsedTime(0);
-    setFinalTime(0);
-  };
+  const currentSizes = isMobile ? mobilePanelSizes : panelSizes;
 
   return (
-    <div
-      className='flex min-h-svh flex-col items-center justify-center gap-4 p-4'
-      style={{ overscrollBehavior: 'none' }}
-    >
-      <h1 className='text-2xl font-bold sm:text-3xl'>Zip</h1>
-
-      {gameState.isComplete && (
-        <div className='text-center'>
-          <div className='mb-2 text-2xl font-bold text-green-600'>
-            🎉 Puzzle Solved! 🎉
-          </div>
-          <div className='rounded bg-green-100 px-4 py-2 font-mono text-lg'>
-            Final Time: {formatTime(finalTime)}
-          </div>
-        </div>
-      )}
-
-      {!gameState.isComplete && (
-        <div className='flex items-center gap-8'>
-          <div className='rounded bg-gray-100 px-3 py-1 font-mono text-base sm:text-lg'>
-            {formatTime(elapsedTime)}
-          </div>
-        </div>
-      )}
-
-      <div
-        ref={gridRef}
-        className={`grid gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
-        style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-          touchAction: 'none',
-        }}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onPointerMove={handlePointerMove}
+    <div className='h-screen'>
+      <ResizablePanelGroup
+        direction={isMobile ? 'vertical' : 'horizontal'}
+        onLayout={handlePanelResize}
       >
-        {gameState.grid.flat().map((cell, index) => {
-          const row = Math.floor(index / GRID_SIZE);
-          const col = index % GRID_SIZE;
-
-          return (
-            <div
-              key={index}
-              data-cell
-              data-row={row}
-              data-col={col}
-              className={`flex h-14 w-14 cursor-pointer touch-manipulation items-center justify-center border border-gray-400 text-lg font-bold transition-colors sm:h-12 sm:w-12 ${
-                cell.filled
-                  ? 'border-blue-500 bg-blue-200'
-                  : cell.number
-                    ? 'bg-yellow-100 hover:bg-yellow-200'
-                    : 'bg-white hover:bg-gray-100'
-              }`}
-              style={{ touchAction: 'none' }}
-              onPointerDown={(e) => handlePointerDown(row, col, e)}
-              onPointerEnter={() => handlePointerEnter(row, col)}
-            >
-              {cell.number}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className='flex items-center gap-2'>
-        <Button
-          onClick={newGame}
-          variant={'ghost'}
-          className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
+        <ResizablePanel
+          defaultSize={isRoomCollapsed ? 100 : currentSizes[0]}
+          minSize={isMobile ? 30 : 40}
         >
-          <Gamepad2 />
-          New Game
-        </Button>
-        <Button
-          onClick={resetPath}
-          variant={'ghost'}
-          className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
+          <Game />
+        </ResizablePanel>
+        <ResizableHandle />
+        <ResizablePanel
+          defaultSize={isRoomCollapsed ? 0 : currentSizes[1]}
+          minSize={isMobile ? 25 : 20}
+          maxSize={isMobile ? 70 : 50}
+          collapsible
+          onCollapse={() => persistRoomCollapsed(!isRoomCollapsed)}
+          collapsedSize={0}
         >
-          <RotateCcw />
-          Reset
-        </Button>
-        <HelpButton />
-      </div>
+          <Room />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
