@@ -10,6 +10,7 @@ const _schema = i.schema({
       text: i.string(),
       authorName: i.string(),
       createdAt: i.number().indexed(),
+      isSystem: i.boolean().optional(),
     }),
     gameBoards: i.entity({
       boardData: i.json(),

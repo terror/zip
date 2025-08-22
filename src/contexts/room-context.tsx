@@ -26,8 +26,10 @@ interface RoomContextType {
     text: string;
     authorName: string;
     createdAt: number;
+    isSystem?: boolean;
   }[];
   sendMessage: (message: string) => void;
+  sendSystemMessage: (message: string) => void;
   onlineCount: number;
 }
 
@@ -154,13 +156,21 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
     const newBoard = generateBoard(5);
 
-    db.transact(
+    db.transact([
       db.tx.gameBoards[currentGameBoard.id].update({
         boardData: newBoard,
         createdAt: Date.now(),
-      })
-    );
-  }, [currentGameBoard, isAdmin]);
+      }),
+      db.tx.messages[id()]
+        .update({
+          text: `${nickname} generated a new game board`,
+          authorName: 'System',
+          createdAt: Date.now(),
+          isSystem: true,
+        })
+        .link({ room: currentRoom.id }),
+    ]);
+  }, [currentGameBoard, isAdmin, nickname, currentRoom]);
 
   const sendMessage = useCallback(
     (message: string) => {
@@ -177,6 +187,24 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       );
     },
     [currentRoom, nickname]
+  );
+
+  const sendSystemMessage = useCallback(
+    (message: string) => {
+      if (!message.trim() || !currentRoom) return;
+
+      db.transact(
+        db.tx.messages[id()]
+          .update({
+            text: message,
+            authorName: 'System',
+            createdAt: Date.now(),
+            isSystem: true,
+          })
+          .link({ room: currentRoom.id })
+      );
+    },
+    [currentRoom]
   );
 
   const isLoading = Boolean(
@@ -198,6 +226,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     regenerateBoard,
     messages: messagesData?.messages || [],
     sendMessage,
+    sendSystemMessage,
     onlineCount,
   };
 

@@ -69,9 +69,20 @@ export const Room = () => {
       <div className='mb-2 flex-1 overflow-y-auto rounded p-4'>
         <div className='space-y-2'>
           {messages.map((msg) => (
-            <div key={msg.id} className='text-sm'>
-              <span className='font-medium'>{msg.authorName}:</span>{' '}
-              <span>{msg.text}</span>
+            <div
+              key={msg.id}
+              className={`text-sm ${msg.isSystem ? 'text-center' : ''}`}
+            >
+              {msg.isSystem ? (
+                <span className='rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 italic'>
+                  {msg.text}
+                </span>
+              ) : (
+                <>
+                  <span className='font-medium'>{msg.authorName}:</span>{' '}
+                  <span>{msg.text}</span>
+                </>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />

@@ -8,6 +8,7 @@ import {
 import { RoomProvider } from '@/contexts/room-context';
 import { useRoomContext } from '@/hooks/use-room-context';
 import { useEffect, useState } from 'react';
+
 import { Loading } from './components/loading';
 
 function AppContent() {

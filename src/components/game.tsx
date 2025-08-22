@@ -23,6 +23,8 @@ export const Game = () => {
     isAdmin,
     regenerateBoard: regenerateRoomBoard,
     adminId,
+    sendSystemMessage,
+    nickname,
   } = useRoomContext();
 
   const [gameState, setGameState] = useState(
@@ -33,6 +35,8 @@ export const Game = () => {
   const [finalTime, setFinalTime] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
+
+  const completionMessageSentRef = useRef(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -55,6 +59,7 @@ export const Game = () => {
     setStartTime(null);
     setElapsedTime(0);
     setFinalTime(0);
+    completionMessageSentRef.current = false;
   }, [roomGameBoard, roomHash]);
 
   const handlePointerDown = (
@@ -150,6 +155,13 @@ export const Game = () => {
       if (newGameState.checkGameCompletion()) {
         setGameState(newGameState.update({ isComplete: true }));
         setFinalTime(elapsedTime);
+
+        if (roomHash && !completionMessageSentRef.current) {
+          completionMessageSentRef.current = true;
+          sendSystemMessage(
+            `🎉 ${nickname} completed the puzzle in ${formatTime(elapsedTime)}!`
+          );
+        }
       } else {
         setGameState(newGameState);
       }
@@ -184,6 +196,7 @@ export const Game = () => {
     setStartTime(null);
     setElapsedTime(0);
     setFinalTime(0);
+    completionMessageSentRef.current = false;
   };
 
   const newGame = () => {
@@ -194,6 +207,7 @@ export const Game = () => {
       setStartTime(null);
       setElapsedTime(0);
       setFinalTime(0);
+      completionMessageSentRef.current = false;
     }
   };
 
