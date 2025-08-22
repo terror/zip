@@ -1,4 +1,4 @@
-import { useRoomContext } from '@/contexts/useRoomContext';
+import { useRoomContext } from '@/hooks/use-room-context';
 import { useEffect, useRef, useState } from 'react';
 
 import { generateRoomHash } from '../lib/utils';

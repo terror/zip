@@ -6,8 +6,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { RoomProvider } from '@/contexts/RoomContext';
-import { useRoomContext } from '@/contexts/useRoomContext';
+import { RoomProvider } from '@/contexts/room-context';
+import { useRoomContext } from '@/hooks/use-room-context';
 import { useEffect, useState } from 'react';
 
 function AppContent() {

@@ -1,6 +1,6 @@
 import { HelpButton } from '@/components/help-modal';
 import { Button } from '@/components/ui/button';
-import { useRoomContext } from '@/contexts/useRoomContext';
+import { useRoomContext } from '@/hooks/use-room-context';
 import { generateBoard } from '@/lib/generator';
 import { GameState } from '@/lib/state';
 import { Gamepad2, RotateCcw, Users } from 'lucide-react';

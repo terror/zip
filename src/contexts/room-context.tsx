@@ -11,23 +11,16 @@ import React, {
 } from 'react';
 
 interface RoomContextType {
-  // Room state
   roomHash: string;
   currentRoom: { id: string; name: string; createdAt: number } | undefined;
   isLoading: boolean;
-
-  // User identity
   userId: string;
   nickname: string;
   updateNickname: (newNickname: string) => void;
-
-  // Game board
   gameBoard: Cell[][] | undefined;
   isAdmin: boolean;
   adminId: string | undefined;
   regenerateBoard: () => void;
-
-  // Chat messages
   messages: {
     id: string;
     text: string;
@@ -35,8 +28,6 @@ interface RoomContextType {
     createdAt: number;
   }[];
   sendMessage: (message: string) => void;
-
-  // Presence
   onlineCount: number;
 }
 
@@ -49,12 +40,10 @@ interface RoomProviderProps {
 }
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
-  // Room hash from URL
   const [currentRoomHash, setCurrentRoomHash] = useState(() => {
     return window.location.hash.slice(1);
   });
 
-  // Generate persistent user ID
   const [userId] = useState(() => {
     const stored = localStorage.getItem('chat-user-id');
     if (stored) return stored;
@@ -63,7 +52,6 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     return newUserId;
   });
 
-  // Nickname management
   const [nickname, setNickname] = useState(() => {
     const stored = localStorage.getItem('chat-nickname');
     if (stored) return stored;
@@ -79,20 +67,20 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Hash change listener
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
+
       if (hash !== currentRoomHash) {
         setCurrentRoomHash(hash);
       }
     };
 
     window.addEventListener('hashchange', handleHashChange);
+
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [currentRoomHash]);
 
-  // Query for room and game board data
   const { data: roomData, isLoading: roomLoading } = db.useQuery(
     currentRoomHash
       ? {
@@ -107,7 +95,6 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   const currentRoom = roomData?.rooms?.[0];
   const currentGameBoard = currentRoom?.gameBoard;
 
-  // Query for messages
   const { data: messagesData, isLoading: messagesLoading } = db.useQuery(
     currentRoom
       ? {
@@ -121,15 +108,16 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       : null
   );
 
-  // Presence
   const room = currentRoomHash ? db.room('chat', currentRoomHash) : null;
+
   const { peers } = db.rooms.usePresence(room || db.room('chat', 'default'));
+
   const onlineCount = currentRoomHash ? 1 + Object.keys(peers).length : 0;
 
-  // Create room if it doesn't exist
   useEffect(() => {
     if (currentRoomHash && roomData && !currentRoom) {
       const roomId = id();
+
       db.transact(
         db.tx.rooms[roomId].update({
           name: currentRoomHash,
@@ -139,10 +127,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     }
   }, [currentRoomHash, roomData, currentRoom]);
 
-  // Create game board if room exists but no game board
   useEffect(() => {
     if (currentRoom && !currentGameBoard && userId) {
       const gameBoardId = id();
+
       const board = generateBoard(5);
 
       db.transact(
@@ -157,16 +145,15 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     }
   }, [currentRoom, currentGameBoard, userId]);
 
-  // Admin logic
   const isAdmin = Boolean(
     currentGameBoard && currentGameBoard.adminId === userId
   );
 
-  // Regenerate board function
   const regenerateBoard = useCallback(() => {
     if (!currentGameBoard || !isAdmin) return;
 
     const newBoard = generateBoard(5);
+
     db.transact(
       db.tx.gameBoards[currentGameBoard.id].update({
         boardData: newBoard,
@@ -175,7 +162,6 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     );
   }, [currentGameBoard, isAdmin]);
 
-  // Send message function
   const sendMessage = useCallback(
     (message: string) => {
       if (!message.trim() || !currentRoom) return;
@@ -193,7 +179,6 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     [currentRoom, nickname]
   );
 
-  // Loading state
   const isLoading = Boolean(
     roomLoading ||
       (currentRoom && messagesLoading) ||
