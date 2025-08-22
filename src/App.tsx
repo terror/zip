@@ -1,4 +1,3 @@
-import { RoomLoading } from '@/components/RoomLoading';
 import { Game } from '@/components/game';
 import { Room } from '@/components/room';
 import {
@@ -9,6 +8,7 @@ import {
 import { RoomProvider } from '@/contexts/room-context';
 import { useRoomContext } from '@/hooks/use-room-context';
 import { useEffect, useState } from 'react';
+import { Loading } from './components/loading';
 
 function AppContent() {
   const { isLoading, roomHash } = useRoomContext();
@@ -62,7 +62,7 @@ function AppContent() {
   const currentSizes = isMobile ? mobilePanelSizes : panelSizes;
 
   if (roomHash && isLoading) {
-    return <RoomLoading />;
+    return <Loading />;
   }
 
   return (
