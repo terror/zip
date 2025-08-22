@@ -11,11 +11,20 @@ const _schema = i.schema({
       authorName: i.string(),
       createdAt: i.number().indexed(),
     }),
+    gameBoards: i.entity({
+      boardData: i.json(),
+      adminId: i.string().indexed(),
+      createdAt: i.number().indexed(),
+    }),
   },
   links: {
     roomMessages: {
       forward: { on: 'messages', has: 'one', label: 'room' },
       reverse: { on: 'rooms', has: 'many', label: 'messages' },
+    },
+    roomGameBoard: {
+      forward: { on: 'rooms', has: 'one', label: 'gameBoard' },
+      reverse: { on: 'gameBoards', has: 'one', label: 'room' },
     },
   },
   rooms: {

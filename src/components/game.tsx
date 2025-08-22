@@ -1,8 +1,9 @@
 import { HelpButton } from '@/components/help-modal';
 import { Button } from '@/components/ui/button';
+import { useRoomContext } from '@/contexts/useRoomContext';
 import { generateBoard } from '@/lib/generator';
 import { GameState } from '@/lib/state';
-import { Gamepad2, RotateCcw } from 'lucide-react';
+import { Gamepad2, RotateCcw, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import {
@@ -16,8 +17,16 @@ const GRID_SIZE = 5;
 export const Game = () => {
   const gridRef = useRef<HTMLDivElement>(null);
 
+  const {
+    roomHash,
+    gameBoard: roomGameBoard,
+    isAdmin,
+    regenerateBoard: regenerateRoomBoard,
+    adminId,
+  } = useRoomContext();
+
   const [gameState, setGameState] = useState(
-    () => new GameState(generateBoard(GRID_SIZE))
+    () => new GameState(roomGameBoard || generateBoard(GRID_SIZE))
   );
 
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -36,6 +45,17 @@ export const Game = () => {
 
     return () => clearInterval(interval);
   }, [gameState.gameStarted, startTime]);
+
+  useEffect(() => {
+    if (!roomGameBoard || !roomHash) {
+      return;
+    }
+
+    setGameState(new GameState(roomGameBoard));
+    setStartTime(null);
+    setElapsedTime(0);
+    setFinalTime(0);
+  }, [roomGameBoard, roomHash]);
 
   const handlePointerDown = (
     row: number,
@@ -167,10 +187,14 @@ export const Game = () => {
   };
 
   const newGame = () => {
-    setGameState(new GameState(generateBoard(GRID_SIZE)));
-    setStartTime(null);
-    setElapsedTime(0);
-    setFinalTime(0);
+    if (roomHash && isAdmin) {
+      regenerateRoomBoard();
+    } else if (!roomHash) {
+      setGameState(new GameState(generateBoard(GRID_SIZE)));
+      setStartTime(null);
+      setElapsedTime(0);
+      setFinalTime(0);
+    }
   };
 
   return (
@@ -178,6 +202,20 @@ export const Game = () => {
       className='flex h-full flex-col items-center justify-center gap-4 p-4'
       style={{ overscrollBehavior: 'none' }}
     >
+      {roomHash && (
+        <div className='mb-2 text-center'>
+          <div className='mb-1 flex items-center justify-center gap-2 text-sm text-gray-600'>
+            <Users size={16} />
+            <span>Room: {roomHash}</span>
+          </div>
+          {adminId && (
+            <div className='text-xs text-gray-500'>
+              {isAdmin ? 'You are the room admin' : 'Room has an admin'}
+            </div>
+          )}
+        </div>
+      )}
+
       {gameState.isComplete && (
         <div className='text-center'>
           <div className='mb-2 text-2xl font-bold text-green-600'>
@@ -240,9 +278,15 @@ export const Game = () => {
           onClick={newGame}
           variant={'ghost'}
           className='touch-manipulation rounded px-4 py-3 text-base sm:text-sm'
+          disabled={Boolean(roomHash && !isAdmin)}
+          title={
+            roomHash && !isAdmin
+              ? 'Only the room admin can generate a new board'
+              : 'Generate a new game board'
+          }
         >
           <Gamepad2 />
-          New Game
+          {roomHash ? 'New Board' : 'New Game'}
         </Button>
         <Button
           onClick={reset}

@@ -10,9 +10,9 @@ export class GameState {
   constructor(
     grid: Cell[][],
     path: Array<{ row: number; col: number }> = [],
-    currentNumber: number = 1,
-    isComplete: boolean = false,
-    gameStarted: boolean = false
+    currentNumber = 1,
+    isComplete = false,
+    gameStarted = false
   ) {
     this.grid = grid;
     this.path = path;

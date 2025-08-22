@@ -1,84 +1,33 @@
-import db from '@/lib/db';
-import { id } from '@instantdb/react';
+import { useRoomContext } from '@/contexts/useRoomContext';
 import { useEffect, useRef, useState } from 'react';
 
-import { generateNickname, generateRoomHash } from '../lib/utils';
+import { generateRoomHash } from '../lib/utils';
 
 export const Room = () => {
   const [message, setMessage] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [nickname] = useState(() => {
-    const stored = localStorage.getItem('chat-nickname');
-    if (stored) return stored;
-    const newNickname = generateNickname();
-    localStorage.setItem('chat-nickname', newNickname);
-    return newNickname;
-  });
+  const {
+    roomHash: currentRoomHash,
+    messages,
+    onlineCount,
+    sendMessage: contextSendMessage,
+  } = useRoomContext();
 
-  const [currentRoomHash, setCurrentRoomHash] = useState(() => {
-    return window.location.hash.slice(1) || generateRoomHash();
+  const [displayRoomHash, setDisplayRoomHash] = useState(() => {
+    return currentRoomHash || generateRoomHash();
   });
 
   useEffect(() => {
-    window.location.hash = currentRoomHash;
-  }, [currentRoomHash]);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-
-      if (hash && hash !== currentRoomHash) {
-        setCurrentRoomHash(hash);
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [currentRoomHash]);
-
-  const { data: roomsData, isLoading: roomsLoading } = db.useQuery({
-    rooms: {
-      $: { where: { name: currentRoomHash } },
-    },
-  });
-
-  const currentRoom = roomsData?.rooms?.[0];
-
-  useEffect(() => {
-    if (roomsData && !currentRoom) {
-      const roomId = id();
-
-      db.transact(
-        db.tx.rooms[roomId].update({
-          name: currentRoomHash,
-          createdAt: Date.now(),
-        })
-      );
+    if (currentRoomHash) {
+      setDisplayRoomHash(currentRoomHash);
     }
-  }, [roomsData, currentRoom, currentRoomHash]);
+  }, [currentRoomHash]);
 
-  const { data: messagesData, isLoading: messagesLoading } = db.useQuery(
-    currentRoom
-      ? {
-          messages: {
-            $: {
-              where: { 'room.id': currentRoom.id },
-              order: { createdAt: 'asc' },
-            },
-          },
-        }
-      : {}
-  );
-
-  const messages = messagesData?.messages || [];
-  const room = db.room('chat', currentRoomHash);
-  const { peers } = db.rooms.usePresence(room);
-  const onlineCount = 1 + Object.keys(peers).length;
-
-  const isLoading = roomsLoading || (currentRoom && messagesLoading);
+  useEffect(() => {
+    window.location.hash = displayRoomHash;
+  }, [displayRoomHash]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,7 +40,7 @@ export const Room = () => {
       if (e.key === '/') {
         e.preventDefault();
         const newHash = generateRoomHash();
-        setCurrentRoomHash(newHash);
+        setDisplayRoomHash(newHash);
       }
     };
 
@@ -101,18 +50,8 @@ export const Room = () => {
   }, []);
 
   const sendMessage = () => {
-    if (!message.trim() || !currentRoom) return;
-
-    db.transact(
-      db.tx.messages[id()]
-        .update({
-          text: message,
-          authorName: nickname,
-          createdAt: Date.now(),
-        })
-        .link({ room: currentRoom.id })
-    );
-
+    if (!message.trim()) return;
+    contextSendMessage(message);
     setMessage('');
   };
 
@@ -121,32 +60,22 @@ export const Room = () => {
       <div className='border-b-1 bg-gray-100 p-2'>
         <div className='flex items-center justify-between'>
           <p className='font-semibold'>Room</p>
-          {!isLoading && (
-            <div className='flex items-center gap-1 text-xs text-gray-500'>
-              <div className='h-2 w-2 rounded-full bg-green-500'></div>
-              <span>{onlineCount} online</span>
-            </div>
-          )}
+          <div className='flex items-center gap-1 text-xs text-gray-500'>
+            <div className='h-2 w-2 rounded-full bg-green-500'></div>
+            <span>{onlineCount} online</span>
+          </div>
         </div>
       </div>
       <div className='mb-2 flex-1 overflow-y-auto rounded p-4'>
-        {isLoading ? (
-          <div className='flex h-full items-center justify-center'>
-            <div className='flex items-center gap-2 text-gray-500'>
-              <div className='h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600'></div>
+        <div className='space-y-2'>
+          {messages.map((msg) => (
+            <div key={msg.id} className='text-sm'>
+              <span className='font-medium'>{msg.authorName}:</span>{' '}
+              <span>{msg.text}</span>
             </div>
-          </div>
-        ) : (
-          <div className='space-y-2'>
-            {messages.map((msg) => (
-              <div key={msg.id} className='text-sm'>
-                <span className='font-medium'>{msg.authorName}:</span>{' '}
-                <span>{msg.text}</span>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
       <div className='flex gap-2 border-t-1 p-4'>
         <input

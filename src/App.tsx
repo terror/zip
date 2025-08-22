@@ -1,3 +1,4 @@
+import { RoomLoading } from '@/components/RoomLoading';
 import { Game } from '@/components/game';
 import { Room } from '@/components/room';
 import {
@@ -5,9 +6,13 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
+import { RoomProvider } from '@/contexts/RoomContext';
+import { useRoomContext } from '@/contexts/useRoomContext';
 import { useEffect, useState } from 'react';
 
-function App() {
+function AppContent() {
+  const { isLoading, roomHash } = useRoomContext();
+
   const [isMobile, setIsMobile] = useState(false);
 
   const [panelSizes, setPanelSizes] = useState(() => {
@@ -31,7 +36,9 @@ function App() {
     };
 
     checkMobile();
+
     window.addEventListener('resize', checkMobile);
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -53,6 +60,10 @@ function App() {
   };
 
   const currentSizes = isMobile ? mobilePanelSizes : panelSizes;
+
+  if (roomHash && isLoading) {
+    return <RoomLoading />;
+  }
 
   return (
     <div className='h-screen'>
@@ -79,6 +90,14 @@ function App() {
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <RoomProvider>
+      <AppContent />
+    </RoomProvider>
   );
 }
 
