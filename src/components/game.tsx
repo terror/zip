@@ -175,11 +175,9 @@ export const Game = () => {
 
   return (
     <div
-      className='flex flex-col items-center gap-4 p-4'
+      className='flex h-full flex-col items-center justify-center gap-4 p-4'
       style={{ overscrollBehavior: 'none' }}
     >
-      <h1 className='text-2xl font-bold sm:text-3xl'>Zip</h1>
-
       {gameState.isComplete && (
         <div className='text-center'>
           <div className='mb-2 text-2xl font-bold text-green-600'>
