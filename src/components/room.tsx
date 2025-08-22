@@ -39,7 +39,7 @@ export const Room = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [currentRoomHash]);
 
-  const { data: roomsData } = db.useQuery({
+  const { data: roomsData, isLoading: roomsLoading } = db.useQuery({
     rooms: {
       $: { where: { name: currentRoomHash } },
     },
@@ -60,7 +60,7 @@ export const Room = () => {
     }
   }, [roomsData, currentRoom, currentRoomHash]);
 
-  const { data: messagesData } = db.useQuery(
+  const { data: messagesData, isLoading: messagesLoading } = db.useQuery(
     currentRoom
       ? {
           messages: {
@@ -77,6 +77,8 @@ export const Room = () => {
   const room = db.room('chat', currentRoomHash);
   const { peers } = db.rooms.usePresence(room);
   const onlineCount = 1 + Object.keys(peers).length;
+
+  const isLoading = roomsLoading || (currentRoom && messagesLoading);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -119,22 +121,32 @@ export const Room = () => {
       <div className='border-b-1 bg-gray-100 p-2'>
         <div className='flex items-center justify-between'>
           <p className='font-semibold'>Room</p>
-          <div className='flex items-center gap-1 text-xs text-gray-500'>
-            <div className='h-2 w-2 rounded-full bg-green-500'></div>
-            <span>{onlineCount} online</span>
-          </div>
+          {!isLoading && (
+            <div className='flex items-center gap-1 text-xs text-gray-500'>
+              <div className='h-2 w-2 rounded-full bg-green-500'></div>
+              <span>{onlineCount} online</span>
+            </div>
+          )}
         </div>
       </div>
       <div className='mb-2 flex-1 overflow-y-auto rounded p-4'>
-        <div className='space-y-2'>
-          {messages.map((msg) => (
-            <div key={msg.id} className='text-sm'>
-              <span className='font-medium'>{msg.authorName}:</span>{' '}
-              <span>{msg.text}</span>
+        {isLoading ? (
+          <div className='flex h-full items-center justify-center'>
+            <div className='flex items-center gap-2 text-gray-500'>
+              <div className='h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600'></div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+          </div>
+        ) : (
+          <div className='space-y-2'>
+            {messages.map((msg) => (
+              <div key={msg.id} className='text-sm'>
+                <span className='font-medium'>{msg.authorName}:</span>{' '}
+                <span>{msg.text}</span>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
       <div className='flex gap-2 border-t-1 p-4'>
         <input
