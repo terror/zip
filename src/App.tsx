@@ -5,31 +5,31 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { RoomProvider } from '@/contexts/room-context';
 import { useRoomContext } from '@/hooks/use-room-context';
 import { useEffect, useState } from 'react';
 
 import { Loading } from './components/loading';
+import { usePersistedState } from './hooks/use-persisted-state';
 
-function AppContent() {
+function App() {
   const { isLoading, roomHash } = useRoomContext();
 
   const [isMobile, setIsMobile] = useState(false);
 
-  const [panelSizes, setPanelSizes] = useState(() => {
-    const saved = localStorage.getItem('panel-sizes');
-    return saved ? JSON.parse(saved) : [60, 40];
-  });
+  const [mobilePanelSizes, setMobilePanelSizes] = usePersistedState(
+    'mobile-panel-sizes',
+    [70, 30]
+  );
 
-  const [mobilePanelSizes, setMobilePanelSizes] = useState(() => {
-    const saved = localStorage.getItem('mobile-panel-sizes');
-    return saved ? JSON.parse(saved) : [70, 30];
-  });
+  const [panelSizes, setPanelSizes] = usePersistedState(
+    'panel-sizes',
+    [60, 40]
+  );
 
-  const [isRoomCollapsed, setIsRoomCollapsed] = useState(() => {
-    const saved = localStorage.getItem('room-collapsed');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [isRoomCollapsed, setIsRoomCollapsed] = usePersistedState(
+    'room-collapsed',
+    false
+  );
 
   useEffect(() => {
     const checkMobile = () => {
@@ -44,20 +44,13 @@ function AppContent() {
   }, []);
 
   const handlePanelResize = (sizes: number[]) => {
-    if (isRoomCollapsed) persistRoomCollapsed(false);
+    if (isRoomCollapsed) setIsRoomCollapsed(false);
 
     if (isMobile) {
       setMobilePanelSizes(sizes);
-      localStorage.setItem('mobile-panel-sizes', JSON.stringify(sizes));
     } else {
       setPanelSizes(sizes);
-      localStorage.setItem('panel-sizes', JSON.stringify(sizes));
     }
-  };
-
-  const persistRoomCollapsed = (value: boolean) => {
-    setIsRoomCollapsed(value);
-    localStorage.setItem('room-collapsed', JSON.stringify(value));
   };
 
   const currentSizes = isMobile ? mobilePanelSizes : panelSizes;
@@ -84,21 +77,13 @@ function AppContent() {
           minSize={isMobile ? 25 : 20}
           maxSize={isMobile ? 70 : 50}
           collapsible
-          onCollapse={() => persistRoomCollapsed(!isRoomCollapsed)}
+          onCollapse={() => setIsRoomCollapsed(!isRoomCollapsed)}
           collapsedSize={0}
         >
           <Room />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
-  );
-}
-
-function App() {
-  return (
-    <RoomProvider>
-      <AppContent />
-    </RoomProvider>
   );
 }
 
