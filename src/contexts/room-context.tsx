@@ -53,7 +53,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
   const [nickname, setNickname] = usePersistedState(
     'chat-nickname',
-    `User${Math.random().toString(36).substr(2, 4)}`
+    `User${Math.random().toString(36).substring(2, 6)}`
   );
 
   const updateNickname = useCallback((newNickname: string) => {
@@ -205,20 +205,20 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   );
 
   const value: RoomContextType = {
-    roomHash: currentRoomHash,
+    adminId: currentGameBoard?.adminId,
     currentRoom,
-    isLoading,
-    userId,
-    nickname,
-    updateNickname,
     gameBoard: currentGameBoard?.boardData as Cell[][] | undefined,
     isAdmin,
-    adminId: currentGameBoard?.adminId,
-    regenerateBoard,
+    isLoading,
     messages: messagesData?.messages || [],
+    nickname,
+    onlineCount,
+    regenerateBoard,
+    roomHash: currentRoomHash,
     sendMessage,
     sendSystemMessage,
-    onlineCount,
+    updateNickname,
+    userId,
   };
 
   return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;
