@@ -14,51 +14,63 @@ import {
 
 const GRID_SIZE = 5;
 
+interface State {
+  elapsedTime: number;
+  finalTime: number;
+  gameState: GameState;
+  isDragging: boolean;
+  startTime?: number;
+}
+
 export const Game = () => {
   const gridRef = useRef<HTMLDivElement>(null);
 
   const {
-    roomHash,
+    adminId,
     gameBoard: roomGameBoard,
     isAdmin,
-    regenerateBoard: regenerateRoomBoard,
-    adminId,
-    sendSystemMessage,
     nickname,
+    regenerateBoard: regenerateRoomBoard,
+    roomHash,
+    sendSystemMessage,
   } = useRoomContext();
 
-  const [gameState, setGameState] = useState(
-    () => new GameState(roomGameBoard || generateBoard(GRID_SIZE))
-  );
-
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [finalTime, setFinalTime] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [state, setState] = useState<State>(() => ({
+    elapsedTime: 0,
+    finalTime: 0,
+    gameState: new GameState(roomGameBoard || generateBoard(GRID_SIZE)),
+    isDragging: false,
+  }));
 
   const completionMessageSentRef = useRef(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (gameState.gameStarted && startTime) {
+    if (state.gameState.gameStarted && state.startTime) {
       interval = setInterval(() => {
-        setElapsedTime(Date.now() - startTime);
+        setState((prev) => ({
+          ...prev,
+          elapsedTime: Date.now() - state.startTime!,
+        }));
       }, 100);
     }
 
     return () => clearInterval(interval);
-  }, [gameState.gameStarted, startTime]);
+  }, [state.gameState.gameStarted, state.startTime]);
 
   useEffect(() => {
     if (!roomGameBoard || !roomHash) {
       return;
     }
 
-    setGameState(new GameState(roomGameBoard));
-    setStartTime(null);
-    setElapsedTime(0);
-    setFinalTime(0);
+    setState((prev) => ({
+      ...prev,
+      elapsedTime: 0,
+      finalTime: 0,
+      gameState: new GameState(roomGameBoard),
+    }));
+
     completionMessageSentRef.current = false;
   }, [roomGameBoard, roomHash]);
 
@@ -67,50 +79,51 @@ export const Game = () => {
     col: number,
     event?: React.PointerEvent
   ) => {
-    if (gameState.isComplete) return;
+    if (state.gameState.isComplete) return;
 
     event?.preventDefault();
 
-    const cell = gameState.grid[row][col];
+    const cell = state.gameState.grid[row][col];
 
-    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
+    const cellInPathIndex = findPositionInPath(state.gameState.path, row, col);
 
     if (cellInPathIndex !== -1) {
-      const newGameState = gameState.trimPathToPosition(row, col);
-      setGameState(newGameState);
-      setIsDragging(true);
+      const newGameState = state.gameState.trimPathToPosition(row, col);
+      setState((prev) => ({
+        ...prev,
+        gameState: newGameState,
+        isDragging: true,
+      }));
       return;
     }
 
-    if (cell.number === gameState.currentNumber) {
-      if (!gameState.gameStarted && cell.number === 1) {
-        setStartTime(Date.now());
-      }
+    if (cell.number === state.gameState.currentNumber) {
+      const shouldStartGame = !state.gameState.gameStarted && cell.number === 1;
 
-      setIsDragging(true);
-
-      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
-
+      const newGrid = state.gameState.grid.map((r) => r.map((c) => ({ ...c })));
       newGrid[row][col].filled = true;
 
-      setGameState(
-        new GameState(
-          newGrid,
-          [{ row, col }],
-          gameState.currentNumber,
-          gameState.isComplete,
-          !gameState.gameStarted && cell.number === 1
-            ? true
-            : gameState.gameStarted
-        )
+      const newGameState = new GameState(
+        newGrid,
+        [{ row, col }],
+        state.gameState.currentNumber,
+        state.gameState.isComplete,
+        shouldStartGame ? true : state.gameState.gameStarted
       );
+
+      setState((prev) => ({
+        ...prev,
+        gameState: newGameState,
+        isDragging: true,
+        startTime: shouldStartGame ? Date.now() : prev.startTime,
+      }));
     }
   };
 
   const handlePointerEnter = (row: number, col: number) => {
-    if (!isDragging || gameState.isComplete) return;
+    if (!state.isDragging || state.gameState.isComplete) return;
 
-    const lastCell = gameState.path[gameState.path.length - 1];
+    const lastCell = state.gameState.path[state.gameState.path.length - 1];
 
     if (!lastCell) return;
 
@@ -118,62 +131,67 @@ export const Game = () => {
 
     if (!isAdjacent) return;
 
-    const cellInPathIndex = findPositionInPath(gameState.path, row, col);
+    const cellInPathIndex = findPositionInPath(state.gameState.path, row, col);
 
     if (cellInPathIndex !== -1) {
-      const newGameState = gameState.trimPathToPosition(row, col);
-      setGameState(newGameState);
+      const newGameState = state.gameState.trimPathToPosition(row, col);
+      setState((prev) => ({ ...prev, gameState: newGameState }));
       return;
     }
 
-    const cell = gameState.grid[row][col];
-    const nextExpectedNumber = gameState.currentNumber + 1;
-    const maxNumber = gameState.getMaxNumber();
+    const cell = state.gameState.grid[row][col];
+    const nextExpectedNumber = state.gameState.currentNumber + 1;
+    const maxNumber = state.gameState.getMaxNumber();
 
-    if (gameState.currentNumber === maxNumber) {
+    if (state.gameState.currentNumber === maxNumber) {
       return;
     }
 
-    if (gameState.canExtendPath({ row, col }, cell)) {
-      const newGrid = gameState.grid.map((r) => r.map((c) => ({ ...c })));
+    if (state.gameState.canExtendPath({ row, col }, cell)) {
+      const newGrid = state.gameState.grid.map((r) => r.map((c) => ({ ...c })));
 
       newGrid[row][col].filled = true;
 
       const newCurrentNumber =
         cell.number === nextExpectedNumber
           ? nextExpectedNumber
-          : gameState.currentNumber;
+          : state.gameState.currentNumber;
 
       const newGameState = new GameState(
         newGrid,
-        [...gameState.path, { row, col }],
+        [...state.gameState.path, { row, col }],
         newCurrentNumber,
-        gameState.isComplete,
-        gameState.gameStarted
+        state.gameState.isComplete,
+        state.gameState.gameStarted
       );
 
       if (newGameState.checkGameCompletion()) {
-        setGameState(newGameState.update({ isComplete: true }));
-        setFinalTime(elapsedTime);
+        const completedGameState = newGameState.update({ isComplete: true });
+        setState((prev) => ({
+          ...prev,
+          finalTime: prev.elapsedTime,
+          gameState: completedGameState,
+        }));
 
         if (roomHash && !completionMessageSentRef.current) {
           completionMessageSentRef.current = true;
+
           sendSystemMessage(
-            `🎉 ${nickname} completed the puzzle in ${formatTime(elapsedTime)}!`
+            `🎉 ${nickname} completed the puzzle in ${formatTime(state.elapsedTime)}!`
           );
         }
       } else {
-        setGameState(newGameState);
+        setState((prev) => ({ ...prev, gameState: newGameState }));
       }
     }
   };
 
   const handlePointerUp = () => {
-    setIsDragging(false);
+    setState((prev) => ({ ...prev, isDragging: false }));
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
-    if (!isDragging || gameState.isComplete) return;
+    if (!state.isDragging || state.gameState.isComplete) return;
 
     event.preventDefault();
 
@@ -192,10 +210,13 @@ export const Game = () => {
   };
 
   const reset = () => {
-    setGameState(gameState.reset());
-    setStartTime(null);
-    setElapsedTime(0);
-    setFinalTime(0);
+    setState((prev) => ({
+      ...prev,
+      elapsedTime: 0,
+      finalTime: 0,
+      gameState: prev.gameState.reset(),
+    }));
+
     completionMessageSentRef.current = false;
   };
 
@@ -203,10 +224,13 @@ export const Game = () => {
     if (roomHash && isAdmin) {
       regenerateRoomBoard();
     } else if (!roomHash) {
-      setGameState(new GameState(generateBoard(GRID_SIZE)));
-      setStartTime(null);
-      setElapsedTime(0);
-      setFinalTime(0);
+      setState((prev) => ({
+        ...prev,
+        elapsedTime: 0,
+        finalTime: 0,
+        gameState: new GameState(generateBoard(GRID_SIZE)),
+      }));
+
       completionMessageSentRef.current = false;
     }
   };
@@ -230,28 +254,28 @@ export const Game = () => {
         </div>
       )}
 
-      {gameState.isComplete && (
+      {state.gameState.isComplete && (
         <div className='text-center'>
           <div className='mb-2 text-2xl font-bold text-green-600'>
             🎉 Puzzle Solved! 🎉
           </div>
           <div className='rounded bg-green-100 px-4 py-2 font-mono text-lg'>
-            Final Time: {formatTime(finalTime)}
+            Final Time: {formatTime(state.finalTime)}
           </div>
         </div>
       )}
 
-      {!gameState.isComplete && (
+      {!state.gameState.isComplete && (
         <div className='flex items-center gap-8'>
           <div className='rounded bg-gray-100 px-3 py-1 font-mono text-base sm:text-lg'>
-            {formatTime(elapsedTime)}
+            {formatTime(state.elapsedTime)}
           </div>
         </div>
       )}
 
       <div
         ref={gridRef}
-        className={`grid gap-1 border-2 border-gray-800 p-2 ${isDragging ? 'no-select' : ''}`}
+        className={`grid gap-1 border-2 border-gray-800 p-2 ${state.isDragging ? 'no-select' : ''}`}
         style={{
           gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
           touchAction: 'none',
@@ -260,7 +284,7 @@ export const Game = () => {
         onPointerLeave={handlePointerUp}
         onPointerMove={handlePointerMove}
       >
-        {gameState.grid.flat().map((cell, index) => {
+        {state.gameState.grid.flat().map((cell, index) => {
           const row = Math.floor(index / GRID_SIZE);
           const col = index % GRID_SIZE;
 
