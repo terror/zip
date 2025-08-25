@@ -1,3 +1,4 @@
+import { usePersistedState } from '@/hooks/use-persisted-state';
 import db from '@/lib/db';
 import { generateBoard } from '@/lib/generator';
 import { Cell } from '@/lib/generator';
@@ -10,27 +11,29 @@ import React, {
   useState,
 } from 'react';
 
+type Message = {
+  id: string;
+  text: string;
+  authorName: string;
+  createdAt: number;
+  isSystem?: boolean;
+};
+
 interface RoomContextType {
-  roomHash: string;
+  adminId: string | undefined;
   currentRoom: { id: string; name: string; createdAt: number } | undefined;
-  isLoading: boolean;
-  userId: string;
-  nickname: string;
-  updateNickname: (newNickname: string) => void;
   gameBoard: Cell[][] | undefined;
   isAdmin: boolean;
-  adminId: string | undefined;
+  isLoading: boolean;
+  messages: Message[];
+  nickname: string;
+  onlineCount: number;
   regenerateBoard: () => void;
-  messages: {
-    id: string;
-    text: string;
-    authorName: string;
-    createdAt: number;
-    isSystem?: boolean;
-  }[];
+  roomHash: string;
   sendMessage: (message: string) => void;
   sendSystemMessage: (message: string) => void;
-  onlineCount: number;
+  updateNickname: (newNickname: string) => void;
+  userId: string;
 }
 
 export const RoomContext = createContext<RoomContextType | undefined>(
@@ -42,31 +45,19 @@ interface RoomProviderProps {
 }
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
-  const [currentRoomHash, setCurrentRoomHash] = useState(() => {
-    return window.location.hash.slice(1);
-  });
+  const [currentRoomHash, setCurrentRoomHash] = useState(
+    window.location.hash.slice(1)
+  );
 
-  const [userId] = useState(() => {
-    const stored = localStorage.getItem('chat-user-id');
-    if (stored) return stored;
-    const newUserId = id();
-    localStorage.setItem('chat-user-id', newUserId);
-    return newUserId;
-  });
+  const [userId] = usePersistedState('chat-user-id', id());
 
-  const [nickname, setNickname] = useState(() => {
-    const stored = localStorage.getItem('chat-nickname');
-    if (stored) return stored;
-    const newNickname = `User${Math.random().toString(36).substr(2, 4)}`;
-    localStorage.setItem('chat-nickname', newNickname);
-    return newNickname;
-  });
+  const [nickname, setNickname] = usePersistedState(
+    'chat-nickname',
+    `User${Math.random().toString(36).substr(2, 4)}`
+  );
 
   const updateNickname = useCallback((newNickname: string) => {
-    if (newNickname.trim()) {
-      setNickname(newNickname.trim());
-      localStorage.setItem('chat-nickname', newNickname.trim());
-    }
+    if (newNickname.trim()) setNickname(newNickname.trim());
   }, []);
 
   useEffect(() => {
@@ -213,7 +204,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       (currentRoomHash && !currentGameBoard)
   );
 
-  const contextValue: RoomContextType = {
+  const value: RoomContextType = {
     roomHash: currentRoomHash,
     currentRoom,
     isLoading,
@@ -230,7 +221,5 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     onlineCount,
   };
 
-  return (
-    <RoomContext.Provider value={contextValue}>{children}</RoomContext.Provider>
-  );
+  return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;
 };
